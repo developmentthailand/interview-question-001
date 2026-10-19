@@ -1,0 +1,163 @@
+<dialog
+  #dialogElement
+  class="dialog-shell"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="dialog-title"
+  (cancel)="onCancel($event)"
+  (click)="onDialogClick($event)"
+>
+  <header class="dialog-header">
+    <div>
+      <p class="dialog-eyebrow">PEOPLE DIRECTORY</p>
+      <h2 id="dialog-title">{{ mode === 'add' ? 'เพิ่มรายชื่อใหม่' : 'รายละเอียดบุคลากร' }}</h2>
+      <p class="dialog-subtitle">
+        {{ mode === 'add' ? 'กรอกข้อมูลพื้นฐานให้ครบถ้วน' : 'ข้อมูลบุคลากรที่บันทึกไว้' }}
+      </p>
+    </div>
+    <button class="icon-button" type="button" aria-label="ปิดหน้าต่าง" (click)="dismiss.emit()">
+      <span aria-hidden="true">×</span>
+    </button>
+  </header>
+
+  @if (errorMessage) {
+    <div class="form-error" role="alert">
+      <span class="error-mark" aria-hidden="true">!</span>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  @if (mode === 'add') {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="firstName">ชื่อ <span aria-hidden="true">*</span></label>
+          <input
+            id="firstName"
+            type="text"
+            formControlName="firstName"
+            autocomplete="given-name"
+            maxlength="80"
+            placeholder="ระบุชื่อ"
+            [attr.aria-invalid]="hasError('firstName', 'required')"
+            aria-describedby="first-name-error"
+            autofocus
+          />
+          @if (hasError('firstName', 'required')) {
+            <small id="first-name-error" class="field-error">กรุณากรอกชื่อ</small>
+          } @else if (hasError('firstName', 'maxlength')) {
+            <small id="first-name-error" class="field-error">ชื่อต้องไม่เกิน 80 ตัวอักษร</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="lastName">นามสกุล <span aria-hidden="true">*</span></label>
+          <input
+            id="lastName"
+            type="text"
+            formControlName="lastName"
+            autocomplete="family-name"
+            maxlength="80"
+            placeholder="ระบุนามสกุล"
+            [attr.aria-invalid]="hasError('lastName', 'required')"
+            aria-describedby="last-name-error"
+          />
+          @if (hasError('lastName', 'required')) {
+            <small id="last-name-error" class="field-error">กรุณากรอกนามสกุล</small>
+          } @else if (hasError('lastName', 'maxlength')) {
+            <small id="last-name-error" class="field-error">นามสกุลต้องไม่เกิน 80 ตัวอักษร</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="dateOfBirth">วันเกิด <span aria-hidden="true">*</span></label>
+          <input
+            id="dateOfBirth"
+            type="date"
+            formControlName="dateOfBirth"
+            [max]="today"
+            [attr.aria-invalid]="hasError('dateOfBirth', 'required') || hasError('dateOfBirth', 'futureDate') || hasError('dateOfBirth', 'date')"
+            aria-describedby="date-of-birth-error"
+          />
+          @if (hasError('dateOfBirth', 'required')) {
+            <small id="date-of-birth-error" class="field-error">กรุณาระบุวันเกิด</small>
+          } @else if (hasError('dateOfBirth', 'futureDate')) {
+            <small id="date-of-birth-error" class="field-error">วันเกิดต้องไม่เป็นวันในอนาคต</small>
+          } @else if (hasError('dateOfBirth', 'date')) {
+            <small id="date-of-birth-error" class="field-error">กรุณาระบุวันที่ถูกต้อง</small>
+          }
+        </div>
+
+        <div class="age-preview" data-testid="age-preview" aria-live="polite">
+          <span class="age-preview-label">อายุปัจจุบัน</span>
+          @if (agePreview !== null) {
+            <strong>{{ agePreview }} <small>ปี</small></strong>
+          } @else {
+            <strong class="age-placeholder">ระบุวันเกิด</strong>
+          }
+          <span class="age-hint">คำนวณจากปีเกิดตามหลักเกณฑ์ข้อสอบ</span>
+        </div>
+
+        <div class="field field-wide">
+          <label for="address">ที่อยู่ <span aria-hidden="true">*</span></label>
+          <textarea
+            id="address"
+            formControlName="address"
+            autocomplete="street-address"
+            maxlength="300"
+            rows="3"
+            placeholder="ระบุที่อยู่"
+            [attr.aria-invalid]="hasError('address', 'required')"
+            aria-describedby="address-error"
+          ></textarea>
+          @if (hasError('address', 'required')) {
+            <small id="address-error" class="field-error">กรุณากรอกที่อยู่</small>
+          } @else if (hasError('address', 'maxlength')) {
+            <small id="address-error" class="field-error">ที่อยู่ต้องไม่เกิน 300 ตัวอักษร</small>
+          }
+        </div>
+      </div>
+
+      <footer class="dialog-actions">
+        <button class="button-secondary" type="button" [disabled]="saving" (click)="dismiss.emit()">ยกเลิก</button>
+        <button class="button-primary" type="submit" [disabled]="form.invalid || saving">
+          <span>{{ saving ? 'กำลังบันทึก' : 'บันทึก' }}</span>
+          @if (!saving) {
+            <span aria-hidden="true">→</span>
+          }
+        </button>
+      </footer>
+    </form>
+  } @else {
+    <section class="view-content" aria-live="polite">
+      @if (detailLoading) {
+        <p class="detail-loading" role="status">กำลังโหลดรายละเอียด...</p>
+      } @else if (person) {
+        <dl class="detail-grid">
+          <div class="detail-item">
+            <dt>ชื่อ-นามสกุล</dt>
+            <dd>{{ person.firstName }} {{ person.lastName }}</dd>
+          </div>
+          <div class="detail-item">
+            <dt>วันเกิด</dt>
+            <dd>{{ person.dateOfBirth | dateOnlyDisplay }}</dd>
+          </div>
+          <div class="detail-item">
+            <dt>อายุ</dt>
+            <dd>{{ ageOf(person.dateOfBirth) ?? '—' }} ปี</dd>
+          </div>
+          <div class="detail-item detail-wide">
+            <dt>ที่อยู่</dt>
+            <dd>{{ person.address }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="detail-loading" role="status">ไม่พบข้อมูลบุคลากร</p>
+      }
+    </section>
+
+    <footer class="dialog-actions view-actions">
+      <button class="button-primary" type="button" autofocus (click)="dismiss.emit()">ปิด</button>
+    </footer>
+  }
+</dialog>

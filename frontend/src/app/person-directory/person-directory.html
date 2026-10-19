@@ -1,0 +1,131 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="People directory home">
+      <span class="brand-mark" aria-hidden="true">PD</span>
+      <span class="brand-copy">
+        <strong>People<span>Desk</span></strong>
+        <small>PERSON DIRECTORY</small>
+      </span>
+    </a>
+    <div class="workspace-label"><span class="online-dot" aria-hidden="true"></span> LOCAL WORKSPACE</div>
+  </header>
+
+  <main class="page-content">
+    <section class="page-intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">PEOPLE OPERATIONS <span>/</span> DIRECTORY</p>
+        <h1 id="page-title">รายชื่อบุคลากร</h1>
+        <p class="page-subtitle">จัดการข้อมูลพื้นฐานและดูรายละเอียดบุคลากรได้ในที่เดียว</p>
+      </div>
+      <button class="button-primary add-button" type="button" aria-haspopup="dialog" (click)="openAdd()">
+        <span class="plus-mark" aria-hidden="true">+</span>
+        <span>เพิ่มรายชื่อ</span>
+      </button>
+    </section>
+
+    <section class="summary-card" aria-label="สรุปรายชื่อบุคลากร">
+      <div class="summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20m7-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7-7.6a4 4 0 0 1 0 7.2m4 9v-1.5a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="summary-copy">
+        <span>บุคลากรทั้งหมด</span>
+        <strong>{{ loading() ? '—' : people().length }}</strong>
+      </div>
+      <div class="summary-divider" aria-hidden="true"></div>
+      <p class="summary-note"><span class="summary-note-mark" aria-hidden="true">✓</span> ข้อมูลแสดงตามลำดับรหัส</p>
+    </section>
+
+    <section class="directory-panel" aria-labelledby="directory-title" [attr.aria-busy]="loading()">
+      <header class="panel-heading">
+        <div>
+          <h2 id="directory-title">รายการบุคลากร</h2>
+          <p>ข้อมูลวันเกิดและอายุสำหรับรายการที่บันทึกไว้</p>
+        </div>
+        <span class="record-count">{{ loading() ? '—' : people().length }} รายการ</span>
+      </header>
+
+      @if (loading()) {
+        <div class="state-block loading-state" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>กำลังโหลดรายชื่อ...</span>
+        </div>
+      } @else if (loadError()) {
+        <div class="state-block error-state" role="alert">
+          <span class="state-symbol" aria-hidden="true">!</span>
+          <div>
+            <strong>โหลดข้อมูลไม่สำเร็จ</strong>
+            <p>{{ loadError() }}</p>
+            <button class="text-button" type="button" (click)="loadPeople()">ลองโหลดอีกครั้ง <span aria-hidden="true">→</span></button>
+          </div>
+        </div>
+      } @else if (people().length === 0) {
+        <div class="state-block empty-state" data-state="empty" role="status">
+          <span class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none"><path d="M24 25a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-15 14v-3a10 10 0 0 1 10-10h10a10 10 0 0 1 10 10v3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <strong>ยังไม่มีข้อมูลบุคลากร</strong>
+          <p>เริ่มต้นด้วยการเพิ่มรายชื่อบุคลากรคนแรก</p>
+          <button class="button-secondary" type="button" (click)="openAdd()">เพิ่มรายชื่อ</button>
+        </div>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">รหัส</th>
+                <th scope="col">ชื่อ-นามสกุล</th>
+                <th scope="col">ที่อยู่</th>
+                <th scope="col">วันเกิด</th>
+                <th scope="col">อายุ</th>
+                <th scope="col">รายละเอียด</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (person of people(); track person.id) {
+                <tr>
+                  <td data-label="รหัส"><span class="person-id">{{ person.id }}</span></td>
+                  <td data-label="ชื่อ-นามสกุล">
+                    <div class="person-cell">
+                      <span class="avatar" aria-hidden="true">{{ person.firstName.slice(0, 1) }}</span>
+                      <span class="person-name">{{ person.firstName }} {{ person.lastName }}</span>
+                    </div>
+                  </td>
+                  <td class="address-cell" data-label="ที่อยู่">{{ person.address }}</td>
+                  <td data-label="วันเกิด">{{ person.dateOfBirth | dateOnlyDisplay }}</td>
+                  <td data-label="อายุ"><span class="age-value">{{ ageOf(person.dateOfBirth) ?? '—' }}</span><span class="age-unit">ปี</span></td>
+                  <td data-label="รายละเอียด">
+                    <button
+                      class="view-button"
+                      type="button"
+                      data-action="view"
+                      [attr.aria-label]="'ดูข้อมูล ' + person.firstName + ' ' + person.lastName"
+                      (click)="openView(person)"
+                    >
+                      ดูข้อมูล <span aria-hidden="true">↗</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="panel-footer">
+          <span>แสดง {{ people().length }} รายการ</span>
+          <span>อายุคำนวณจากปีเกิดตามหลักเกณฑ์ข้อสอบ</span>
+        </footer>
+      }
+    </section>
+  </main>
+</div>
+
+@if (dialogOpen()) {
+  <app-person-dialog
+    [mode]="dialogMode()"
+    [person]="selectedPerson()"
+    [detailLoading]="detailLoading()"
+    [saving]="saving()"
+    [errorMessage]="dialogError()"
+    (savePerson)="savePerson($event)"
+    (dismiss)="dismissDialog()"
+  />
+}
